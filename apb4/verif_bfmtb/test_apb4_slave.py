@@ -31,34 +31,79 @@ async def compare_block(master,backend,write):
 
     
 
+class BaseTester():
 
+    def __init__(self):
+
+            self.bfm = apb4_slave_bfm()
+
+
+    def clock_setup(self):
+
+         cocotb.start_soon(Clock(cocotb.top.pclk,2,"ns").start())
+
+    async def send_command(self):
+
+          pass
+    
+    
+    async def execute(self):
+
+            self.clock_setup()
+            await self.bfm.reset()
+            self.bfm.start_tasks()
+            await self.send_command()
+            await compare_block(self.bfm.master_monitor_queue,self.bfm.backend_monitor_queue,self.write)
+            await self.bfm.master_completion_queue.get()
+            
+            
+
+
+class WriteTester(BaseTester):
+
+        def __init__(self,addr,data,strb,write):
+             super().__init__()
+             self.addr = addr
+             self.data = data
+             self.strb = strb
+             self.write = write
+             
+
+        async def send_command(self):
+
+                await self.bfm.send_write_command(self.addr,self.data,self.strb,self.write)
+
+
+class ReadTester(BaseTester):
+
+      def __init__(self,addr,read_data,write):
+            super().__init__()
+            self.addr = addr
+            self.read_data = read_data
+            self.write = write
+
+      async def send_command(self):
+
+            await self.bfm.send_read_command(self.addr,self.read_data,self.write)
 
 
 @cocotb.test()
-async def basic_write_test(_):
-    cocotb.start_soon(Clock(cocotb.top.pclk,2,unit="ns").start())
-    bfm = apb4_slave_bfm()
-    await bfm.reset()
-    bfm.start_tasks()
-    addr = 0x1004
-    strb = 0xF
-    data = 0xFACD
-    write = 1
-    await bfm.send_write_command(addr,data,strb,write)
-    await compare_block(bfm.master_monitor_queue,bfm.backend_monitor_queue,write)   
-    # await Timer(100,"ns")
+async def write_test(_):
+
+      
+      addr = 0x10
+      data = 0x20
+      strb = 0xF
+      write = 0x1
+      write_tester = WriteTester(addr,data,strb,write)
+      await write_tester.execute()
 
 
 @cocotb.test()
-async def basic_read_test(_):
-    cocotb.start_soon(Clock(cocotb.top.pclk,2,unit="ns").start())
-    bfm = apb4_slave_bfm()
-    await bfm.reset()
-    bfm.start_tasks()
-    addr = 0x1004
-    read_data = 0xFACD
-    write = 0
-    await bfm.send_read_command(addr,read_data,write)
-    await compare_block(bfm.master_monitor_queue,bfm.backend_monitor_queue,write)   
-    # await Timer(100,"ns")
+async def read_test(_):
 
+      addr = 0x10
+      data = 0x20
+      write = 0
+      read_tester = ReadTester(addr,data,write)
+      await read_tester.execute()
