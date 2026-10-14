@@ -14,7 +14,7 @@ VERILOG_SOURCES = \
 VERILOG_INCLUDE_DIRS = \
     $(PWD)/rtl_include
 
-export PYTHONPATH := $(PWD)/verif
+export PYTHONPATH := $(PWD)/verif_bfmtb
 EXTRA_ARGS += --trace --trace-structs
 EXTRA_ARGS += --no-timing
 
