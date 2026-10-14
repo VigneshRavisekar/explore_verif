@@ -8,10 +8,10 @@ from cocotb.clock import Clock
 class apb4_slave_bfm(metaclass=pyuvm.Singleton):
     def __init__(self):
         self.dut = cocotb.top
-        self.master_driver_queue =   Queue()
-        self.backend_driver_queue =  Queue()
-        self.master_monitor_queue =  Queue()
-        self.backend_monitor_queue = Queue()
+        self.master_driver_queue =   Queue(maxsize=1)
+        self.backend_driver_queue =  Queue(maxsize=1)
+        self.master_monitor_queue =  Queue(maxsize=1)
+        self.backend_monitor_queue = Queue(maxsize=1)
         self.master_completion_queue = Queue()
     
 
@@ -110,16 +110,15 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
 
     async def backend_monitor(self):
           """Backend Monitor"""
-          backend_mon = []
+          
           while True:
                 await RisingEdge(self.dut.pclk)
                 await ReadOnly()
                 if self.dut.cmd_valid.value == 1 and self.dut.cmd_ready.value == 1:
                      if self.dut.cmd_pwrite.value == 1:
-                           backend_mon.append(int(self.dut.cmd_paddr.value))
-                           backend_mon.append(int(self.dut.cmd_pwdata.value))
-                           backend_mon.append(int(self.dut.cmd_pstrb.value))
-                           print(backend_mon)
+                           backend_mon = [(int(self.dut.cmd_paddr.value)),
+                           (int(self.dut.cmd_pwdata.value)),(int(self.dut.cmd_pstrb.value))]
+                        #    self.dut._log.info(f"DEBUG:{backend_mon}")
                             
                      else:
                            backend_mon.append(int(self.dut.cmd_paddr.value))
