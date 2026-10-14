@@ -12,6 +12,8 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
         self.backend_driver_queue =  Queue()
         self.master_monitor_queue =  Queue()
         self.backend_monitor_queue = Queue()
+        self.master_completion_queue = Queue()
+    
 
     async def reset(self):
 
@@ -46,6 +48,7 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                         await RisingEdge(self.dut.pclk)
                     self.dut.s_apb_PENABLE.value = 0
                     self.dut.s_apb_PSEL.value = 0
+                    await self.master_completion_queue.put(self.dut._log.info("Write Operation Completed"))
                    
 
                 else:
@@ -63,6 +66,7 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                          await RisingEdge(self.dut.pclk)
                      self.dut.s_apb_PENABLE.value = 0
                      self.dut.s_apb_PSEL.value = 0
+                     await self.master_completion_queue.put(self.dut._log.info("Read Operation Completed"))
                     
 
                  
@@ -93,7 +97,7 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                          command = [addr,data,strb]
                          await self.master_monitor_queue.put(command)
                          self.dut._log.info(f"Master queue: {self.master_monitor_queue._queue}")
-                         self.dut._log.info("Write Operation Completed")
+                        #  self.dut._log.info("Write Operation Completed")
                     
               else:
                     if self.dut.s_apb_PENABLE.value == 1 and self.dut.s_apb_PSEL.value == 1 and self.dut.s_apb_PREADY.value == 1:
@@ -101,7 +105,7 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                                             read_command = [int(self.dut.s_apb_PADDR.value),int(read_data)]
                                             await self.master_monitor_queue.put(read_command)
                                             self.dut._log.info(f"Master queue: {self.master_monitor_queue._queue}")
-                                            self.dut._log.info("Read Operation Completed")
+                                            # self.dut._log.info("Read Operation Completed")
 
 
     async def backend_monitor(self):
