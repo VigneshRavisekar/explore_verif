@@ -6,7 +6,7 @@ import random
 from cocotb.queue import Queue, QueueEmpty
 from cocotb.triggers import Timer, RisingEdge, FallingEdge
 from cocotb.clock import Clock 
-from verif_bfmtb.apb4_slave_bfm import *
+from apb4_slave_bfm import *
 
 async def compare_block(master,backend,write):
 
