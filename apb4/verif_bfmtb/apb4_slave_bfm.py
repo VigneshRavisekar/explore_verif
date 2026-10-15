@@ -5,7 +5,7 @@ from cocotb.queue import Queue, QueueEmpty
 from cocotb.triggers import Timer, RisingEdge, FallingEdge,ReadOnly
 from cocotb.clock import Clock  
 
-class apb4_slave_bfm(metaclass=pyuvm.Singleton):
+class apb4_slave_bfm:
     def __init__(self):
         self.dut = cocotb.top
         self.master_driver_queue =   Queue(maxsize=1)
@@ -15,13 +15,7 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
         self.master_completion_queue = Queue()
     
 
-    async def reset(self):
-
-        await FallingEdge(self.dut.pclk)
-        self.dut.presetn.value = 0
-        await Timer(2,"ns")
-        self.dut.presetn.value = 1
-
+    
     async def master_driver(self):
         """Master_2_ap4_Driver"""
 
@@ -110,8 +104,8 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
 
     async def backend_monitor(self):
           """Backend Monitor"""
-          backend_mon = []
           while True:
+                backend_mon = []
                 await RisingEdge(self.dut.pclk)
                 await ReadOnly()
                 if self.dut.cmd_valid.value == 1 and self.dut.cmd_ready.value == 1:
@@ -119,7 +113,14 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                            backend_mon.append(int(self.dut.cmd_paddr.value))
                            backend_mon.append(int(self.dut.cmd_pwdata.value))
                            backend_mon.append(int(self.dut.cmd_pstrb.value))
-                        #    self.dut._log.info(f"DEBUG:{backend_mon}")
+                           self.dut._log.info(f"1DEBUG:{backend_mon}")
+                           while True:
+                                await RisingEdge(self.dut.pclk)
+                                if self.dut.rsp_valid.value == 1 and self.dut.rsp_ready.value == 1:
+                                     break
+                           await self.backend_monitor_queue.put(backend_mon) 
+                           self.dut._log.info(f"Backend queue: {self.backend_monitor_queue._queue}") 
+                                 
                             
                      else:
                            backend_mon.append(int(self.dut.cmd_paddr.value))
@@ -128,11 +129,13 @@ class apb4_slave_bfm(metaclass=pyuvm.Singleton):
                             if self.dut.rsp_valid.value == 1 and self.dut.rsp_ready.value == 1:
                                 backend_mon.append(int(self.dut.rsp_prdata.value))
                                 break
-
-                if self.dut.rsp_valid.value == 1 and self.dut.rsp_ready.value == 1:
-                        
-                        await self.backend_monitor_queue.put(backend_mon) 
-                        self.dut._log.info(f"Backend queue: {self.backend_monitor_queue._queue}")
+                           self.dut._log.info(f"DEBUG1:{backend_mon}")
+                           await self.backend_monitor_queue.put(backend_mon) 
+                           self.dut._log.info(f"Backend queue: {self.backend_monitor_queue._queue}")
+                
+                # # if self.dut.rsp_valid.value == 1 and self.dut.rsp_ready.value == 1:
+                # await self.backend_monitor_queue.put(backend_mon) 
+                # self.dut._log.info(f"Backend queue: {self.backend_monitor_queue._queue}")
                    
               
 
