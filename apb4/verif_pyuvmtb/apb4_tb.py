@@ -9,6 +9,7 @@ from apb4_backend_agent import *
 
 async def reset():
 
+        
         await FallingEdge(cocotb.top.pclk)
         cocotb.top.presetn.value = 0
         await Timer(2,"ns")
@@ -21,20 +22,24 @@ class apb4_tester(uvm_component):
     def build_phase(self):
 
         self.dut = cocotb.top
-        self.tester_bpp = uvm_blocking_put_port("tester_bpp",self)
+        self.master_bpp = uvm_blocking_put_port("master_bpp", self)
+        self.backend_bpp = uvm_blocking_put_port("backend_bpp", self)
 
     def start_of_simulation_phase(self):
 
         cocotb.start_soon(Clock(cocotb.top.pclk,2,"ns").start())
 
+
     async def run_phase(self):
 
-        
          await reset()
-         packet  = ConfigDB().get(self,"","WRITE_PACKET")
-         print(packet)
-         await self.tester_bpp.put(packet)
-
+         packet  = ConfigDB().get(self,"","PACKET")
+         self.logger.info(packet)
+         if packet["write"] == 1:
+            await self.master_bpp.put(packet)
+         else:
+             await self.master_bpp.put(packet)
+             await self.backend_bpp.put(packet)
 
 
 class Scoreboard(uvm_scoreboard):
@@ -74,18 +79,23 @@ class apb4_env(uvm_env):
 
     def build_phase(self):
 
-        self.m_agent     = master_agent("m_agent",self)
-        self.b_agent     = backend_agent("b_agent",self)
-        self.tester      = apb4_tester("tester",self)
-        self.scoreboard  = Scoreboard("scoreboard",self)
-        self.master_fifo = uvm_tlm_fifo("master_fifo",self)
+        self.m_agent      = master_agent("m_agent",self)
+        self.b_agent      = backend_agent("b_agent",self)
+        self.tester       = apb4_tester("tester",self)
+        self.scoreboard   = Scoreboard("scoreboard",self)
+        self.master_fifo  = uvm_tlm_fifo("master_fifo",self)
+        self.backend_fifo = uvm_tlm_fifo("backend_fifo",self)
     
     def connect_phase(self):
 
-         self.tester.tester_bpp.connect(self.master_fifo.put_export)
+         self.tester.master_bpp.connect(self.master_fifo.put_export)
+         self.tester.backend_bpp.connect(self.backend_fifo.put_export)
          self.m_agent.m_driver.m_driver_gp.connect(self.master_fifo.get_export)
+         self.b_agent.b_driver.b_driver_gp.connect(self.backend_fifo.get_export)
          self.m_agent.m_monitor.m_monitor_ap.connect(self.scoreboard.m_mon_fifo.analysis_export)
          self.b_agent.b_monitor.b_monitor_ap.connect(self.scoreboard.b_mon_fifo.analysis_export)
     
+    def end_of_elaboration_phase(self):
 
+        self.logger.info("APB4_ENV")
     

@@ -18,4 +18,18 @@ class t_write_basic(uvm_test):
         self.write     = 1
         write_packet = {"addr":self.addr,"data":self.data,"strb":self.strb,"write":self.write}
         self.env  = apb4_env("env",self)
-        ConfigDB().set(self,"env.tester","WRITE_PACKET",write_packet)
+        ConfigDB().set(self,"env.tester","PACKET",write_packet)
+
+
+@pyuvm.test()
+class t_read_basic(uvm_test):
+
+    def build_phase(self):
+
+        ### Read_Packet 
+        self.addr       = 0x10
+        self.read_data = 0x20
+        self.write     = 0
+        read_packet = {"addr":self.addr,"data":self.read_data,"write":self.write}
+        self.env  = apb4_env("env",self)
+        ConfigDB().set(self,"env.tester","PACKET",read_packet)
