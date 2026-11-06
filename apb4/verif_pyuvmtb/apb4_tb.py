@@ -7,39 +7,39 @@ from apb4_master_agent import *
 from apb4_backend_agent import *
 
 
-async def reset():
+# async def reset():
 
         
-        await FallingEdge(cocotb.top.pclk)
-        cocotb.top.presetn.value = 0
-        await Timer(2,"ns")
-        cocotb.top.presetn.value = 1
+#         await FallingEdge(cocotb.top.pclk)
+#         cocotb.top.presetn.value = 0
+#         await Timer(2,"ns")
+#         cocotb.top.presetn.value = 1
     
 
 
-class apb4_tester(uvm_component):
+# class apb4_tester(uvm_component):
 
-    def build_phase(self):
+#     def build_phase(self):
 
-        self.dut = cocotb.top
-        self.master_bpp = uvm_blocking_put_port("master_bpp", self)
-        self.backend_bpp = uvm_blocking_put_port("backend_bpp", self)
+#         self.dut = cocotb.top
+#         self.master_bpp = uvm_blocking_put_port("master_bpp", self)
+#         self.backend_bpp = uvm_blocking_put_port("backend_bpp", self)
 
-    def start_of_simulation_phase(self):
+#     def start_of_simulation_phase(self):
 
-        cocotb.start_soon(Clock(cocotb.top.pclk,2,"ns").start())
+#         cocotb.start_soon(Clock(cocotb.top.pclk,2,"ns").start())
 
 
-    async def run_phase(self):
+#     async def run_phase(self):
 
-         await reset()
-         packet  = ConfigDB().get(self,"","PACKET")
-         self.logger.info(packet)
-         if packet["write"] == 1:
-            await self.master_bpp.put(packet)
-         else:
-             await self.master_bpp.put(packet)
-             await self.backend_bpp.put(packet)
+#          await reset()
+#          packet  = ConfigDB().get(self,"","PACKET")
+#          self.logger.info(packet)
+#          if packet["write"] == 1:
+#             await self.master_bpp.put(packet)
+#          else:
+#              await self.master_bpp.put(packet)
+#              await self.backend_bpp.put(packet)
 
 
 class Scoreboard(uvm_scoreboard):
@@ -58,6 +58,7 @@ class Scoreboard(uvm_scoreboard):
 
      async def run_phase(self):
 
+         
          self.sent_packet    = await self.m_mon_gp.get()
          self.command_packet = await self.b_mon_gp.get()
     
@@ -79,18 +80,21 @@ class apb4_env(uvm_env):
 
     def build_phase(self):
 
+        self.apb4_seqr    = uvm_sequencer("apb4_seqr",self)
+        ConfigDB().set(None,"*","APB4_SEQUENCER",self.apb4_seqr)
         self.m_agent      = master_agent("m_agent",self)
         self.b_agent      = backend_agent("b_agent",self)
-        self.tester       = apb4_tester("tester",self)
+        # self.tester       = apb4_tester("tester",self)
         self.scoreboard   = Scoreboard("scoreboard",self)
-        self.master_fifo  = uvm_tlm_fifo("master_fifo",self)
+        # self.master_fifo  = uvm_tlm_fifo("master_fifo",self)
         self.backend_fifo = uvm_tlm_fifo("backend_fifo",self)
     
     def connect_phase(self):
 
-         self.tester.master_bpp.connect(self.master_fifo.put_export)
-         self.tester.backend_bpp.connect(self.backend_fifo.put_export)
-         self.m_agent.m_driver.m_driver_gp.connect(self.master_fifo.get_export)
+        #  self.tester.master_bpp.connect(self.master_fifo.put_export)
+        #  self.m_agent.m_driver.m_driver_gp.connect(self.master_fifo.get_export)
+         self.m_agent.m_driver.seq_item_port.connect(self.apb4_seqr.seq_item_export)
+        #  self.tester.backend_bpp.connect(self.backend_fifo.put_export)
          self.b_agent.b_driver.b_driver_gp.connect(self.backend_fifo.get_export)
          self.m_agent.m_monitor.m_monitor_ap.connect(self.scoreboard.m_mon_fifo.analysis_export)
          self.b_agent.b_monitor.b_monitor_ap.connect(self.scoreboard.b_mon_fifo.analysis_export)

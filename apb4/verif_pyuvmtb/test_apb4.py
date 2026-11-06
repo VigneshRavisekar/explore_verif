@@ -4,21 +4,63 @@ from cocotb.triggers import Timer, RisingEdge, FallingEdge,ReadOnly
 from cocotb.clock import Clock  
 from pyuvm import *
 from apb4_tb import *
+from apb4_seq import *
 
-
-@pyuvm.test()
-class t_write_basic(uvm_test):
+class APB4Test(uvm_test):
 
     def build_phase(self):
 
-        ## Write_Packet
-        self.addr      = 0x10
-        self.data      = 0x20
-        self.strb      = 0x3
-        self.write     = 1
-        write_packet = {"addr":self.addr,"data":self.data,"strb":self.strb,"write":self.write}
-        self.env  = apb4_env("env",self)
-        ConfigDB().set(self,"env.tester","PACKET",write_packet)
+        self.env = apb4_env("env",self)
+        self.seq  = APB4_Sequence.create("seq")
+    
+    async def reset(self):
+
+        
+        await FallingEdge(cocotb.top.pclk)
+        cocotb.top.presetn.value = 0
+        await Timer(2,"ns")
+        cocotb.top.presetn.value = 1
+    
+    
+    def end_of_elaboration_phase(self):
+
+        self.apb4_seqr = ConfigDB().get(self,"","APB4_SEQUENCER")
+
+    def start_of_simulation_phase(self):
+
+        cocotb.start_soon(Clock(cocotb.top.pclk,2,"ns").start())
+        
+
+    async def run_phase(self):
+
+        self.raise_objection()
+        await self.reset()
+        await self.seq.start(self.apb4_seqr)
+        self.drop_objection()
+
+@pyuvm.test()
+class t_write_basic(APB4Test):
+
+    def build_phase(self):
+
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+        super().build_phase()
+
+
+
+# @pyuvm.test()
+# class t_write_basic(uvm_test):
+
+#     def build_phase(self):
+
+#         ## Write_Packet
+#         self.addr      = 0x10
+#         self.data      = 0x20
+#         self.strb      = 0x3
+#         self.write     = 1
+#         write_packet = {"addr":self.addr,"data":self.data,"strb":self.strb,"write":self.write}
+#         self.env  = apb4_env("env",self)
+#         ConfigDB().set(self,"env.tester","PACKET",write_packet)
 
 
 @pyuvm.test()
