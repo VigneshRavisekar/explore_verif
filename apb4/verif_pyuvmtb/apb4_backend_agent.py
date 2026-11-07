@@ -11,22 +11,45 @@ class backend_driver(uvm_driver):
     def build_phase(self):
 
          self.dut = cocotb.top
-         self.b_driver_gp = uvm_blocking_get_port("b_driver_gp",self)
+      #    self.b_driver_gp = uvm_blocking_get_port("b_driver_gp",self)
 
 
     async def run_phase(self):
 
+              self.backend_rsp = await self.seq_item_port.get_next_item()
+              self.dut.cmd_ready.value = 1 ## Backend is available everytime
+              while self.dut.cmd_valid.value !=1:
+                     await RisingEdge(self.dut.pclk)
+              if self.dut.cmd_pwrite.value != 1:
+                  self.dut.rsp_prdata.value = self.backend_rsp.rsp_data
+              self.dut.rsp_valid.value = 1
+              while True:
+                       if self.dut.rsp_ready !=1:
+                              await RisingEdge(self.dut.pclk)
+                       break
+              self.dut.rsp_valid.value = 0
+              self.seq_item_port.item_done()    
                 
-           self.dut.cmd_ready.value = 1 ## Backend is available everytime
-           while self.dut.cmd_valid.value != 1:
-                 await RisingEdge(self.dut.pclk)
-           self.dut.rsp_valid.value = 1
-           if self.dut.cmd_pwrite.value == 0:
-                 self.rdata = (await self.b_driver_gp.get())["data"]
-                 self.dut.rsp_prdata.value = self.rdata
-           while self.dut.rsp_ready.value == 1:
-                 await RisingEdge(self.dut.pclk)
-           self.dut.rsp_valid.value = 0
+      #      self.dut.cmd_ready.value = 1 ## Backend is available everytime
+      #      while self.dut.cmd_valid.value != 1:
+      #            await RisingEdge(self.dut.pclk)
+
+           
+      #      if self.dut.cmd_pwrite.value == 0:
+      #       #      self.rdata = (await self.b_driver_gp.get())["data"]
+      #            self.backend_rsp = await self.seq_item_port.get_next_item()
+      #            self.dut.rsp_prdata.value = self.backend_rsp.rsp_data
+      #            self.dut.rsp_valid.value = 1
+      #            while True:
+      #                  if self.dut.rsp_ready !=1:
+      #                   await RisingEdge(self.dut.pclk)
+      #                  break
+      #            self.dut.rsp_valid.value = 0
+      #            self.seq_item_port.item_done()    
+      #      else:
+      #       while self.dut.rsp_ready.value != 1:
+      #            await RisingEdge(self.dut.pclk)
+      #       self.dut.rsp_valid.value = 0
 
 class backend_monitor(uvm_monitor):
 

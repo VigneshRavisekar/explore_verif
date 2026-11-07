@@ -81,21 +81,24 @@ class apb4_env(uvm_env):
     def build_phase(self):
 
         self.apb4_seqr    = uvm_sequencer("apb4_seqr",self)
+        self.backend_seqr = uvm_sequencer("backend_seqr",self)
         ConfigDB().set(None,"*","APB4_SEQUENCER",self.apb4_seqr)
+        ConfigDB().set(None,"*","BACKEND_SEQUENCER",self.backend_seqr)
         self.m_agent      = master_agent("m_agent",self)
         self.b_agent      = backend_agent("b_agent",self)
         # self.tester       = apb4_tester("tester",self)
         self.scoreboard   = Scoreboard("scoreboard",self)
         # self.master_fifo  = uvm_tlm_fifo("master_fifo",self)
-        self.backend_fifo = uvm_tlm_fifo("backend_fifo",self)
+        # self.backend_fifo = uvm_tlm_fifo("backend_fifo",self)
     
     def connect_phase(self):
 
         #  self.tester.master_bpp.connect(self.master_fifo.put_export)
         #  self.m_agent.m_driver.m_driver_gp.connect(self.master_fifo.get_export)
          self.m_agent.m_driver.seq_item_port.connect(self.apb4_seqr.seq_item_export)
+         self.b_agent.b_driver.seq_item_port.connect(self.backend_seqr.seq_item_export)
         #  self.tester.backend_bpp.connect(self.backend_fifo.put_export)
-         self.b_agent.b_driver.b_driver_gp.connect(self.backend_fifo.get_export)
+        #  self.b_agent.b_driver.b_driver_gp.connect(self.backend_fifo.get_export)
          self.m_agent.m_monitor.m_monitor_ap.connect(self.scoreboard.m_mon_fifo.analysis_export)
          self.b_agent.b_monitor.b_monitor_ap.connect(self.scoreboard.b_mon_fifo.analysis_export)
     

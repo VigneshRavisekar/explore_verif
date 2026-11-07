@@ -41,6 +41,7 @@ class master_driver(uvm_driver):
         self.dut.s_apb_PENABLE.value = 1
         while self.dut.s_apb_PREADY.value != 1:
             await RisingEdge(self.dut.pclk)
+      
         self.dut.s_apb_PENABLE.value = 0
         self.dut.s_apb_PSEL.value = 0
         self.seq_item_port.item_done()

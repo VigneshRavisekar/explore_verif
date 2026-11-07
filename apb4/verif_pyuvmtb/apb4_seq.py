@@ -21,6 +21,19 @@ class APB4_Sequence_Item(uvm_sequence_item):
             f"write:{self.apb4_write}"
         )
 
+    
+class Backend_Sequence_Item(uvm_sequence_item):
+
+    def __init__(self,name):
+        super().__init__(name)
+        self.rsp_data = 0
+        
+    def __str__(self):
+        return (
+            f"{self.get_name()}: "
+            f"data:{self.rsp_data} "
+)
+
 
 class APB4_Sequence(uvm_sequence):
 
@@ -43,6 +56,23 @@ class APB4_Write_Seq(APB4_Sequence):
         packet.apb4_data = 0x20
         packet.apb4_strb = 0x1
         packet.apb4_write = 1
+
+class APB4_Read_Seq(APB4_Sequence):
+
+    def supply_packet(self, packet):
+        packet.apb4_addr = 0x10
+        packet.apb4_write = 0
+
+class Backend_Seq(uvm_sequence):
+
+    async def body(self):
+
+        b_packet = Backend_Sequence_Item("b_packet")
+        await self.start_item(b_packet)
+        b_packet.rsp_data = 0x20
+        await self.finish_item(b_packet)
+
+
 
         
 
