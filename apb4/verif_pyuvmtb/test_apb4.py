@@ -1,5 +1,6 @@
 import cocotb
 import pyuvm 
+import inspect
 from cocotb.triggers import *
 from cocotb.clock import Clock
 from pyuvm import *
@@ -10,9 +11,24 @@ class APB4Test(uvm_test):
 
     def build_phase(self):
 
+    
         self.env = apb4_env("env",self)
         self.seq  = APB4_Sequence.create("seq")
         self.b_seq = Backend_Seq.create("b_seq")
+        self.valid_addr_list = []
+        for valid_addr in range(0x1000,0x2000):
+                        self.valid_addr_list.append(valid_addr)
+        if not hasattr(self, "rsp_delay"):
+            self.rsp_delay = 0
+
+        if not hasattr(self, "cmd_delay"):
+            self.cmd_delay = 0
+
+        
+        ConfigDB().set(self,"env.b_agent.b_driver","RSP_DELAY",self.rsp_delay)     
+        ConfigDB().set(self,"env.b_agent.b_driver","CMD_DELAY",self.cmd_delay)     
+        ConfigDB().set(self,"env.b_agent.b_driver","ADDR_LIST",self.valid_addr_list)
+        ConfigDB().set(self,"env.scoreboard","ADDR_LIST",self.valid_addr_list)
     
     async def reset(self):
 
@@ -57,8 +73,57 @@ class t_read_basic(APB4Test):
         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
         super().build_phase()
 
+@pyuvm.test()
+class t_pattern_basic(APB4Test):
+
+    def build_phase(self):
+        # Replace the default APB sequence with the 32-item pattern sequence.
+        uvm_factory().set_type_override_by_type(
+            APB4_Sequence, APB4_Pattern_WALK_ONE_ZERO
+        )
+
+        # The current backend driver consumes one backend item for every
+        # command, so provide 32 backend items for the 32 APB writes.
+        uvm_factory().set_type_override_by_type(
+            Backend_Seq, Backend_Pattern_Seq
+        )
+
+        super().build_phase()
 
 
+@pyuvm.test()
+class t_error_resp(APB4Test):
+
+    def build_phase(self):
+
+        # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Error_Write_Seq)
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Error_Read_Seq)
+        super().build_phase()
+
+
+@pyuvm.test()
+class t_rsp_delay(APB4Test):
+
+    def build_phase(self):
+
+         
+         self.rsp_delay = 4
+         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+         super().build_phase()
+
+
+@pyuvm.test()
+class t_cmd_backpressure(APB4Test):
+
+    def build_phase(self):
+
+         
+         self.cmd_delay = 18
+         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+         super().build_phase()
+
+
+   
 # @pyuvm.test()
 # class t_write_basic(uvm_test):
 

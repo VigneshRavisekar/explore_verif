@@ -50,31 +50,95 @@ class Scoreboard(uvm_scoreboard):
         self.b_mon_fifo = uvm_tlm_analysis_fifo("b_mon_fifo",self)
         self.m_mon_gp   = uvm_get_port("m_mon_gp",self)
         self.b_mon_gp   = uvm_get_port("b_mon_gp",self)
+        self.valid_addr_list = ConfigDB().get(self,"","ADDR_LIST")
 
      def connect_phase(self):
 
         self.m_mon_gp.connect(self.m_mon_fifo.get_export)
         self.b_mon_gp.connect(self.b_mon_fifo.get_export)
 
+     async def collect_master_monitor(self):
+
+        while True:
+            sent_packet = await self.m_mon_gp.get()
+            self.recieve_error_rsp   = await self.m_mon_gp.get()
+            self.sent_packet_list.append(sent_packet)
+
+           
+
+     async def collect_backend_monitor(self):
+
+        while True:
+            command_packet    = await self.b_mon_gp.get()
+            self.sent_err_rsp = await self.b_mon_gp.get()
+            self.command_packet_list.append(command_packet)
+
+           
+
      async def run_phase(self):
 
-         
-         self.sent_packet    = await self.m_mon_gp.get()
-         self.command_packet = await self.b_mon_gp.get()
-    
+        self.sent_packet_list = []
+        self.command_packet_list = []
+        cocotb.start_soon(self.collect_master_monitor())
+        cocotb.start_soon(self.collect_backend_monitor())
+
+
      def check_phase(self):
 
         passed = True
-        for key in self.sent_packet:
-            if self.sent_packet[key] != self.command_packet[key]:
-                self.logger.error(
-                    f"MISMATCH {key}: apb={self.sent_packet[key]} backend={self.command_packet[key]}")
-                passed = False
-            else:
-                self.logger.info(f"{key} matches: {self.sent_packet[key]}")
-        assert passed, "scoreboard found mismatches"
-         
-    
+
+        # Check transaction count
+        if len(self.sent_packet_list) != len(self.command_packet_list):
+            self.logger.error(
+                f"TRANSACTION COUNT MISMATCH: "
+                f"master={len(self.sent_packet_list)}, "
+                f"backend={len(self.command_packet_list)}"
+            )
+            passed = False
+
+        #Before Comparing transactions check whether the key is the valid_addr 
+        for index,command_packet in enumerate(self.command_packet_list):
+
+            if  command_packet["addr"] not in self.valid_addr_list:
+
+                 backend_addr = command_packet["addr"]
+                 self.logger.info(f"Received_Command_Addr {backend_addr} is invalid address and backend will assert PSLVERR")
+
+                 if (self.sent_err_rsp == 0 and self.recieve_error_rsp == 0):
+
+                    passed = False
+                    self.logger.error(f"Backend Response must indicate Error")
+        
+        
+        
+        # Compare corresponding transactions
+        for index, (sent_packet, command_packet) in enumerate(
+            zip(self.sent_packet_list, self.command_packet_list)
+        ):
+
+            for key in sent_packet:
+
+                if key not in command_packet:
+                    self.logger.error(
+                        f"Transaction {index}: Missing key {key} in backend packet"
+                    )
+                    passed = False
+
+                elif sent_packet[key] != command_packet[key]:
+                    self.logger.error(
+                        f"Transaction {index}: MISMATCH {key}: "
+                        f"master={sent_packet[key]}, "
+                        f"backend={command_packet[key]}"
+                    )
+                    passed = False
+
+                else:
+                    self.logger.info(
+                        f"Transaction {index}: {key} matches: {sent_packet[key]}"
+                    )
+
+        assert passed, "Scoreboard found mismatches"
+
 
 class apb4_env(uvm_env):
 

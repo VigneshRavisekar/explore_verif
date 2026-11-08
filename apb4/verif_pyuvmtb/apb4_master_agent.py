@@ -70,9 +70,12 @@ class master_monitor(uvm_monitor):
                              if self.dut.s_apb_PWRITE.value == 1:
                                 sampled_packet = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PWDATA.value),"strb":int(self.dut.s_apb_PSTRB.value)}
                                 self.m_monitor_ap.write(sampled_packet)
+                                self.m_monitor_ap.write(self.dut.s_apb_PSLVERR.value)
                              else:
                                   read_packet  = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PRDATA.value)}
                                   self.m_monitor_ap.write(read_packet)
+                                  self.m_monitor_ap.write(self.dut.s_apb_PSLVERR.value)
+
 
 
 class master_agent(uvm_agent):
