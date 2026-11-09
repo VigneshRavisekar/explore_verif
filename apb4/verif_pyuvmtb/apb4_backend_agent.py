@@ -10,8 +10,8 @@ class backend_driver(uvm_driver):
 
     def build_phase(self):
 
-         self.dut             = cocotb.top
-         self.valid_addr_list = ConfigDB().get(self,"","ADDR_LIST")
+         self.dut                 = cocotb.top
+         self.valid_addr_list     = ConfigDB().get(self,"","ADDR_LIST")
          self.rsp_delay           = ConfigDB().get(self,"","RSP_DELAY")
          self.cmd_delay           = ConfigDB().get(self,"","CMD_DELAY")
          
@@ -49,10 +49,8 @@ class backend_driver(uvm_driver):
                  
                   self.dut.rsp_valid.value = 1
                   await RisingEdge(self.dut.pclk)
-                  while True:
-                           if self.dut.rsp_ready.value !=1:
-                                  await RisingEdge(self.dut.pclk)
-                           break
+                  while self.dut.rsp_ready.value != 1:
+                        await RisingEdge(self.dut.pclk)
                   self.dut.rsp_valid.value = 0
                   self.dut.rsp_pslverr.value = 0
                   self.seq_item_port.item_done()    

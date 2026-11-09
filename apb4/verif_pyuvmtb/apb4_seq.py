@@ -5,12 +5,15 @@ from pyuvm import *
 
 class APB4_Sequence_Item(uvm_sequence_item):
 
-    def __init__(self, name, addr=0, data=0, strb=0, write=0):
+    def __init__(self, name, addr=0, data=0, strb=0, write=0,count=1):
         super().__init__(name)
-        self.apb4_addr = addr
-        self.apb4_data = data
-        self.apb4_strb = strb
+        self.apb4_addr  = addr
+        self.apb4_data  = data
+        self.apb4_strb  = strb
         self.apb4_write = write
+        self.count      = count
+       
+
 
     def __str__(self):
         return (
@@ -24,9 +27,10 @@ class APB4_Sequence_Item(uvm_sequence_item):
     
 class Backend_Sequence_Item(uvm_sequence_item):
 
-    def __init__(self,name):
+    def __init__(self,name,count=1):
         super().__init__(name)
         self.rsp_data  = 0
+        self.count     = count
         
     def __str__(self):
         return (
@@ -39,7 +43,7 @@ class APB4_Sequence(uvm_sequence):
 
     async def body(self):
 
-        
+    
         packet = APB4_Sequence_Item("packet")
         await self.start_item(packet)
         self.supply_packet(packet)
@@ -81,6 +85,7 @@ class Backend_Seq(uvm_sequence):
 
     async def body(self):
 
+        
         b_packet = Backend_Sequence_Item("b_packet")
         await self.start_item(b_packet)
         b_packet.rsp_data = 0x20
@@ -123,8 +128,75 @@ class Backend_Pattern_Seq(Backend_Seq):
             await self.start_item(b_packet)
             await self.finish_item(b_packet)
 
-            
 
+class Back_to_Back_Write_Seq(APB4_Sequence):
+
+    async def body(self):
+
+        apb4_addr = [0x1000, 0x1011, 0x1006]
+        apb4_data = [0x20, 0x300, 0x40]
+        apb4_strb = [0x3, 0x7, 0x3]
+
+        for index in range(self.count):
+
+            packet = APB4_Sequence_Item(
+                f"packet_{index}"
+            )
+
+            packet.apb4_addr = apb4_addr[index]
+            packet.apb4_data = apb4_data[index]
+            packet.apb4_strb = apb4_strb[index]
+            packet.apb4_write = 1
+
+            await self.start_item(packet)
+            await self.finish_item(packet)
+            
+class Back_to_Back_Read_Seq(APB4_Sequence):
+
+    async def body(self):
+
+        apb4_addr = [0x1000, 0x1011, 0x1006]
+
+        for index in range(self.count):
+
+            packet = APB4_Sequence_Item(
+                f"packet_{index}"
+            )
+
+            packet.apb4_addr = apb4_addr[index]
+            packet.apb4_write = 0
+
+            await self.start_item(packet)
+            await self.finish_item(packet)
+            
         
+class Back_to_Back_Backend_Seq(Backend_Seq):
+
+    async def body(self):
+
+        rsp_data = [0x101,0x201,0x301]
+        for index in range(self.count):
+
+            b_packet = Backend_Sequence_Item(f"b_packet_{index}")
+            b_packet.rsp_data = rsp_data[index]
+            await self.start_item(b_packet)
+            await self.finish_item(b_packet)
+                        
+
+
+class Back_to_Back_Backend_Seq(Backend_Seq):
+
+    async def body(self):
+
+        rsp_data = [0x101,0x201,0x301]
+        for index in range(self.count):
+
+            b_packet = Backend_Sequence_Item(f"b_packet_{index}")
+            b_packet.rsp_data = rsp_data[index]
+            await self.start_item(b_packet)
+            await self.finish_item(b_packet)
+                        
+            
+      
 
 

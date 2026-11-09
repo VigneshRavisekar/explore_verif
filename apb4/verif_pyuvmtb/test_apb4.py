@@ -9,26 +9,37 @@ from apb4_seq import *
 
 class APB4Test(uvm_test):
 
+
+
     def build_phase(self):
 
-    
-        self.env = apb4_env("env",self)
-        self.seq  = APB4_Sequence.create("seq")
-        self.b_seq = Backend_Seq.create("b_seq")
-        self.valid_addr_list = []
-        for valid_addr in range(0x1000,0x2000):
-                        self.valid_addr_list.append(valid_addr)
-        if not hasattr(self, "rsp_delay"):
-            self.rsp_delay = 0
 
-        if not hasattr(self, "cmd_delay"):
-            self.cmd_delay = 0
-
+         if not hasattr(self, "rsp_delay"):
+                    self.rsp_delay = 0
         
-        ConfigDB().set(self,"env.b_agent.b_driver","RSP_DELAY",self.rsp_delay)     
-        ConfigDB().set(self,"env.b_agent.b_driver","CMD_DELAY",self.cmd_delay)     
-        ConfigDB().set(self,"env.b_agent.b_driver","ADDR_LIST",self.valid_addr_list)
-        ConfigDB().set(self,"env.scoreboard","ADDR_LIST",self.valid_addr_list)
+         if not hasattr(self, "cmd_delay"):
+             self.cmd_delay = 0
+         
+         if not hasattr(self, "idle"):
+             self.idle = 0
+         
+         if not hasattr(self, "count"):
+                    self.count = 1
+        
+         self.env = apb4_env("env",self)
+         self.seq  = APB4_Sequence.create("seq")
+         self.b_seq = Backend_Seq.create("b_seq")
+         self.valid_addr_list = []
+         self.seq.count = self.count
+         self.b_seq.count = self.count
+         for valid_addr in range(0x1000,0x2000):
+                        self.valid_addr_list.append(valid_addr)
+       
+         ConfigDB().set(self,"env.b_agent.b_driver","RSP_DELAY",self.rsp_delay)     
+         ConfigDB().set(self,"env.b_agent.b_driver","CMD_DELAY",self.cmd_delay)     
+         ConfigDB().set(self,"env.m_agent.m_driver","IDLE",self.idle)     
+         ConfigDB().set(self,"env.b_agent.b_driver","ADDR_LIST",self.valid_addr_list)
+         ConfigDB().set(self,"env.scoreboard","ADDR_LIST",self.valid_addr_list)
     
     async def reset(self):
 
@@ -62,6 +73,7 @@ class t_write_basic(APB4Test):
 
     def build_phase(self):
 
+        
         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
         super().build_phase()
 
@@ -123,31 +135,24 @@ class t_cmd_backpressure(APB4Test):
          super().build_phase()
 
 
-   
-# @pyuvm.test()
-# class t_write_basic(uvm_test):
+@pyuvm.test()
+class t_back_to_back_write(APB4Test):
 
-#     def build_phase(self):
+    def build_phase(self):
 
-#         ## Write_Packet
-#         self.addr      = 0x10
-#         self.data      = 0x20
-#         self.strb      = 0x3
-#         self.write     = 1
-#         write_packet = {"addr":self.addr,"data":self.data,"strb":self.strb,"write":self.write}
-#         self.env  = apb4_env("env",self)
-#         ConfigDB().set(self,"env.tester","PACKET",write_packet)
+        self.idle = 0
+        self.count = 3
+        uvm_factory().set_type_override_by_type(APB4_Sequence,Back_to_Back_Write_Seq)
+        uvm_factory().set_type_override_by_type(Backend_Seq,Back_to_Back_Backend_Seq)
+        super().build_phase()
 
+@pyuvm.test()
+class t_back_to_back_read(APB4Test):
 
-# @pyuvm.test()
-# class t_read_basic(uvm_test):
+    def build_phase(self):
 
-#     def build_phase(self):
-
-#         ### Read_Packet 
-#         self.addr       = 0x10
-#         self.read_data = 0x20
-#         self.write     = 0
-#         read_packet = {"addr":self.addr,"data":self.read_data,"write":self.write}
-#         self.env  = apb4_env("env",self)
-#         ConfigDB().set(self,"env.tester","PACKET",read_packet)
+        self.idle = 0
+        self.count = 3
+        uvm_factory().set_type_override_by_type(APB4_Sequence,Back_to_Back_Read_Seq)
+        uvm_factory().set_type_override_by_type(Backend_Seq,Back_to_Back_Backend_Seq)
+        super().build_phase()

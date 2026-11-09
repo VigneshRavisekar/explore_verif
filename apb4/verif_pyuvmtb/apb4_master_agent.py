@@ -11,6 +11,7 @@ class master_driver(uvm_driver):
 
         self.dut = cocotb.top
         # self.m_driver_gp = uvm_blocking_get_port("m_driver_gp",self)
+        self.idle = ConfigDB().get(self,"","IDLE")
 
     def end_of_elaboration_phase(self):
 
@@ -36,8 +37,11 @@ class master_driver(uvm_driver):
 
 
             ### APB ACCESS PHASE
-
-            await RisingEdge(self.dut.pclk)
+            if self.idle > 0:
+                for _ in range(self.idle):
+                    await RisingEdge(self.dut.pclk)
+            else:
+                    await RisingEdge(self.dut.pclk)
             self.dut.s_apb_PENABLE.value = 1
             # while self.dut.s_apb_PREADY.value != 1:
             #     await RisingEdge(self.dut.pclk)
