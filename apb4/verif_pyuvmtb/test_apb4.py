@@ -7,6 +7,7 @@ from pyuvm import *
 from apb4_tb import *
 from apb4_seq import *
 
+
 class APB4Test(uvm_test):
 
 
@@ -24,7 +25,7 @@ class APB4Test(uvm_test):
              self.idle = 0
          
          if not hasattr(self, "count"):
-                    self.count = 1
+                self.count = 1
         
          self.env = apb4_env("env",self)
          self.seq  = APB4_Sequence.create("seq")
@@ -34,7 +35,9 @@ class APB4Test(uvm_test):
          self.b_seq.count = self.count
          for valid_addr in range(0x1000,0x2000):
                         self.valid_addr_list.append(valid_addr)
-       
+
+
+         ### Configuration setting of various variables
          ConfigDB().set(self,"env.b_agent.b_driver","RSP_DELAY",self.rsp_delay)     
          ConfigDB().set(self,"env.b_agent.b_driver","CMD_DELAY",self.cmd_delay)     
          ConfigDB().set(self,"env.m_agent.m_driver","IDLE",self.idle)     
@@ -73,7 +76,7 @@ class t_write_basic(APB4Test):
 
     def build_phase(self):
 
-        
+        self.count = 3
         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
         super().build_phase()
 
@@ -82,6 +85,7 @@ class t_read_basic(APB4Test):
 
     def build_phase(self):
 
+    
         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
         super().build_phase()
 
@@ -108,8 +112,8 @@ class t_error_resp(APB4Test):
 
     def build_phase(self):
 
-        # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Error_Write_Seq)
-        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Error_Read_Seq)
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+        # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
         super().build_phase()
 
 
@@ -142,8 +146,8 @@ class t_back_to_back_write(APB4Test):
 
         self.idle = 0
         self.count = 3
-        uvm_factory().set_type_override_by_type(APB4_Sequence,Back_to_Back_Write_Seq)
-        uvm_factory().set_type_override_by_type(Backend_Seq,Back_to_Back_Backend_Seq)
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+        # uvm_factory().set_type_override_by_type(Backend_Sequence,Backend_Seq)
         super().build_phase()
 
 @pyuvm.test()
@@ -153,6 +157,20 @@ class t_back_to_back_read(APB4Test):
 
         self.idle = 0
         self.count = 3
-        uvm_factory().set_type_override_by_type(APB4_Sequence,Back_to_Back_Read_Seq)
-        uvm_factory().set_type_override_by_type(Backend_Seq,Back_to_Back_Backend_Seq)
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
+        uvm_factory().set_type_override_by_type(Backend_Sequence,Backend_Seq)
         super().build_phase()
+
+@pyuvm.test()
+class t_rand_mix(APB4Test):
+
+    def build_phase(self):
+
+        self.count = 2
+
+
+        # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
+
+        super().build_phase()
+        self.seq.random_mode = True

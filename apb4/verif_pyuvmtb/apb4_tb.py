@@ -61,7 +61,6 @@ class Scoreboard(uvm_scoreboard):
 
         while True:
             sent_packet = await self.m_mon_gp.get()
-            self.recieve_error_rsp   = await self.m_mon_gp.get()
             self.sent_packet_list.append(sent_packet)
 
            
@@ -70,7 +69,6 @@ class Scoreboard(uvm_scoreboard):
 
         while True:
             command_packet    = await self.b_mon_gp.get()
-            self.sent_err_rsp = await self.b_mon_gp.get()
             self.command_packet_list.append(command_packet)
 
            
@@ -104,7 +102,7 @@ class Scoreboard(uvm_scoreboard):
                  backend_addr = command_packet["addr"]
                  self.logger.info(f"Received_Command_Addr {backend_addr} is invalid address and backend will assert PSLVERR")
 
-                 if (self.sent_err_rsp == 0 and self.recieve_error_rsp == 0):
+                 if (command_packet["err"] == 0 and sent_packet["err"] == 0):
 
                     passed = False
                     self.logger.error(f"Backend Response must indicate Error")

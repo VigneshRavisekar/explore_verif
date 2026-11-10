@@ -72,13 +72,13 @@ class master_monitor(uvm_monitor):
             await FallingEdge(self.dut.pclk)
             if self.dut.s_apb_PREADY.value == 1 and  self.dut.s_apb_PENABLE.value == 1 and self.dut.s_apb_PSEL.value == 1:
                              if self.dut.s_apb_PWRITE.value == 1:
-                                sampled_packet = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PWDATA.value),"strb":int(self.dut.s_apb_PSTRB.value)}
+                                sampled_packet = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PWDATA.value),"strb":int(self.dut.s_apb_PSTRB.value),"err":int(self.dut.s_apb_PSLVERR.value)}
                                 self.m_monitor_ap.write(sampled_packet)
-                                self.m_monitor_ap.write(self.dut.s_apb_PSLVERR.value)
+                
                              else:
-                                  read_packet  = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PRDATA.value)}
+                                  read_packet  = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PRDATA.value),"err":int(self.dut.s_apb_PSLVERR.value)}
                                   self.m_monitor_ap.write(read_packet)
-                                  self.m_monitor_ap.write(self.dut.s_apb_PSLVERR.value)
+                    
 
 
 
