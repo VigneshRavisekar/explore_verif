@@ -3,7 +3,6 @@ import pyuvm
 from cocotb.triggers import Timer, RisingEdge, FallingEdge,ReadOnly
 from cocotb.clock import Clock  
 from pyuvm import *
-from apb4_coverage import *
 
 class master_driver(uvm_driver):
 
