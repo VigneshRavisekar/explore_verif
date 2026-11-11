@@ -114,6 +114,7 @@ class Backend_Seq(Backend_Sequence):
 
             else:
 
+                self.randomizer.randomize()
                 b_packet.rsp_data = int(self.randomizer.rsp_data)
 
 class APB4_Read_Seq(APB4_Sequence):
@@ -174,7 +175,19 @@ class Backend_Pattern_Seq(Backend_Seq):
             await self.finish_item(b_packet)
 
 
-            
+class APB4_Mix_Seq(APB4_Sequence):
+
+    def __init__(self, name="APB4_Mix_Seq"):
+        super().__init__(name)
+        self.randomizer = APB4_Random_Mix()
+
+    def supply_packet(self, packet, transaction_index):
+        self.randomizer.randomize()
+        packet.apb4_write = int(self.randomizer.write)
+        packet.apb4_addr  = int(self.randomizer.addr)
+        if packet.apb4_write == 1:
+            packet.apb4_data = int(self.randomizer.data)
+            packet.apb4_strb = int(self.randomizer.strb)            
       
 
 

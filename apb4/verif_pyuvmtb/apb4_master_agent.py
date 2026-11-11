@@ -3,6 +3,7 @@ import pyuvm
 from cocotb.triggers import Timer, RisingEdge, FallingEdge,ReadOnly
 from cocotb.clock import Clock  
 from pyuvm import *
+from apb4_coverage import *
 
 class master_driver(uvm_driver):
 
@@ -62,6 +63,7 @@ class master_monitor(uvm_monitor):
 
         self.dut = cocotb.top
         self.m_monitor_ap = uvm_analysis_port("m_monitor_ap",self)
+     
 
 
     async def run_phase(self):
@@ -78,7 +80,8 @@ class master_monitor(uvm_monitor):
                              else:
                                   read_packet  = {"addr":int(self.dut.s_apb_PADDR.value),"data":int(self.dut.s_apb_PRDATA.value),"err":int(self.dut.s_apb_PSLVERR.value)}
                                   self.m_monitor_ap.write(read_packet)
-                    
+                         
+                             
 
 
 

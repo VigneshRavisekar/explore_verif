@@ -1,5 +1,6 @@
 import cocotb
 import pyuvm 
+import vsc
 import inspect
 from cocotb.triggers import *
 from cocotb.clock import Clock
@@ -85,7 +86,7 @@ class t_read_basic(APB4Test):
 
     def build_phase(self):
 
-    
+        self.count = 3
         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
         super().build_phase()
 
@@ -161,16 +162,25 @@ class t_back_to_back_read(APB4Test):
         uvm_factory().set_type_override_by_type(Backend_Sequence,Backend_Seq)
         super().build_phase()
 
+# @pyuvm.test()
+# class t_rand_mix(APB4Test):
+
+#     def build_phase(self):
+
+#         self.count = 2
+
+
+#         # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
+#         uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
+
+#         super().build_phase()
+#         self.seq.random_mode = True
+
 @pyuvm.test()
 class t_rand_mix(APB4Test):
 
     def build_phase(self):
-
-        self.count = 2
-
-
-        # uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Write_Seq)
-        uvm_factory().set_type_override_by_type(APB4_Sequence,APB4_Read_Seq)
-
+        self.count = 5
+        uvm_factory().set_type_override_by_type(APB4_Sequence, APB4_Mix_Seq)
         super().build_phase()
-        self.seq.random_mode = True
+        self.b_seq.random_mode = True
