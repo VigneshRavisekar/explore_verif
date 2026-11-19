@@ -93,9 +93,11 @@ class backend_monitor(uvm_monitor):
                   write = self.dut.cmd_pwrite.value
                  
                   if write == 1:
-                        cmd_packet = {"addr":int(self.dut.cmd_paddr.value),"data":int(self.dut.cmd_pwdata.value),"strb":int(self.dut.cmd_pstrb.value),"err":self.dut.rsp_pslverr.value}
+                        cmd_packet = {"write":write,"addr":int(self.dut.cmd_paddr.value),"data":int(self.dut.cmd_pwdata.value),"strb":int(self.dut.cmd_pstrb.value)}
+                        while self.dut.rsp_valid.value != 1:
+                                    await FallingEdge(self.dut.pclk)
+                        cmd_packet["err"] = self.dut.rsp_pslverr.value
                         self.b_monitor_ap.write(cmd_packet)
-
                   else:
                         self.addr = int(self.dut.cmd_paddr.value)
                  
@@ -104,8 +106,10 @@ class backend_monitor(uvm_monitor):
                               await FallingEdge(self.dut.pclk)
 
                   if write == 0:
+
                               self.read_data = int(self.dut.rsp_prdata.value)
-                              read_packet = {"addr":self.addr,"data":self.read_data,"err":self.dut.rsp_pslverr.value}
+                              read_packet = {"write":write,"addr":self.addr,"data":self.read_data,"err":self.dut.rsp_pslverr.value}
+                              
                               self.b_monitor_ap.write(read_packet)
        
 

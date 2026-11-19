@@ -5,6 +5,7 @@ from cocotb.clock import Clock
 from pyuvm import *
 from apb4_master_agent import *
 from apb4_backend_agent import *
+from apb4_random        import *
 
 
 # async def reset():
@@ -41,6 +42,24 @@ from apb4_backend_agent import *
 #              await self.master_bpp.put(packet)
 #              await self.backend_bpp.put(packet)
 
+class apb4_coverage(uvm_subscriber):
+
+    def build_phase(self):
+
+        self.cg1 = CG1()
+
+    def write(self, packet):
+
+        write=packet["write"]
+        err=packet["err"]
+        self.cg1.sample(write,err)
+
+    def report_phase(self):
+
+        vsc.report_coverage(details=True)
+        vsc.write_coverage_db("apb4_coverage.xml")
+
+    
 
 class Scoreboard(uvm_scoreboard):
 
@@ -84,7 +103,6 @@ class Scoreboard(uvm_scoreboard):
      def check_phase(self):
 
         passed = True
-
         # Check transaction count
         if len(self.sent_packet_list) != len(self.command_packet_list):
             self.logger.error(
@@ -95,7 +113,7 @@ class Scoreboard(uvm_scoreboard):
             passed = False
 
         #Before Comparing transactions check whether the key is the valid_addr 
-        for index,command_packet in enumerate(self.command_packet_list):
+        for index,(sent_packet,command_packet) in enumerate(zip(self.sent_packet_list,self.command_packet_list)):
 
             if  command_packet["addr"] not in self.valid_addr_list:
 
@@ -150,6 +168,7 @@ class apb4_env(uvm_env):
         self.b_agent      = backend_agent("b_agent",self)
         # self.tester       = apb4_tester("tester",self)
         self.scoreboard   = Scoreboard("scoreboard",self)
+        self.coverage     = apb4_coverage("apb4_coverage",self)
         # self.master_fifo  = uvm_tlm_fifo("master_fifo",self)
         # self.backend_fifo = uvm_tlm_fifo("backend_fifo",self)
     
@@ -163,6 +182,7 @@ class apb4_env(uvm_env):
         #  self.b_agent.b_driver.b_driver_gp.connect(self.backend_fifo.get_export)
          self.m_agent.m_monitor.m_monitor_ap.connect(self.scoreboard.m_mon_fifo.analysis_export)
          self.b_agent.b_monitor.b_monitor_ap.connect(self.scoreboard.b_mon_fifo.analysis_export)
+         self.m_agent.m_monitor.m_monitor_ap.connect(self.coverage.analysis_export)
     
     def end_of_elaboration_phase(self):
 
